@@ -1,0 +1,30 @@
+\documentclass{article}
+\usepackage{amsmath}
+\usepackage{CJKutf8}
+
+\begin{document}
+
+\begin{CJK}{UTF8}{gbsn}
+
+\section*{公式展示}
+
+\subsection*{线性插值公式}
+用于表1任务量数据补全的线性插值公式为：
+\[
+y(t) = y_1 + \frac{(y_2 - y_1)(t - t_1)}{t_2 - t_1}
+\]
+其中：
+- \( y(t) \) 为待插值时间 \( t \) 处的任务量，
+- \( y_1, y_2 \) 分别为相邻已知时段的任务量，
+- \( t_1, t_2 \) 为对应时间点。
+
+\subsection*{优化目标函数（参考）}
+后续建模中拟采用的优化目标函数为：
+\[
+\min \sum_{t=0}^{23} (P_{g,t} \cdot C_{g,t} + P_{c,t} \cdot C_{c,t})
+\]
+其中 \( P_{g,t}, P_{c,t} \) 分别为绿色电力和传统电力使用量，\( C_{g,t}, C_{c,t} \) 分别为对应电价。
+
+\end{CJK}
+
+\end{document}
