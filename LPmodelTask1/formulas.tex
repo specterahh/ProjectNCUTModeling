@@ -1,0 +1,67 @@
+\documentclass{article}
+\usepackage{amsmath}
+\usepackage{amssymb}
+
+\title{Power Scheduling Linear Programming Model}
+\author{}
+\date{}
+
+\begin{document}
+
+\maketitle
+
+\section{Model Formulation}
+
+\subsection{Decision Variables}
+\begin{align*}
+&E_{\text{high},h} \geq 0 && \text{High-priority task power demand at hour } h \\
+&E_{\text{med},h} \geq 0 && \text{Medium-priority task power demand at hour } h \\
+&E_{\text{low},h} \geq 0 && \text{Low-priority task power demand at hour } h \\
+&E_{\text{green},h} \geq 0 && \text{Green energy usage at hour } h \\
+&E_{\text{traditional},h} \geq 0 && \text{Traditional energy usage at hour } h \\
+&\text{where } h \in \{0,1,\ldots,23\}
+\end{align*}
+
+\subsection{Objective Function}
+Minimize total energy cost:
+$$
+\text{minimize} \quad \sum_{h=0}^{23} \left( c_{\text{green},h} \cdot E_{\text{green},h} + c_{\text{traditional},h} \cdot E_{\text{traditional},h} \right)
+$$
+
+\subsection{Constraints}
+
+\subsubsection{Task Demand Constraints}
+\begin{align*}
+E_{\text{high},h} &= D_{\text{high},h}, && \forall h \in \{0,\ldots,23\} \\
+E_{\text{med},h} &= D_{\text{med},h}, && \forall h \in \{0,\ldots,23\} \\
+E_{\text{low},h} &= D_{\text{low},h}, && \forall h \in \{0,\ldots,23\}
+\end{align*}
+
+\subsubsection{Energy Supply Constraints}
+\begin{align*}
+E_{\text{green},h} &\leq S_{\text{green},h}, && \forall h \in \{0,\ldots,23\} \\
+E_{\text{high},h} + E_{\text{med},h} + E_{\text{low},h} &= E_{\text{green},h} + E_{\text{traditional},h}, && \forall h \in \{0,\ldots,23\}
+\end{align*}
+
+\section{Complete Model}
+$$
+\begin{aligned}
+& \text{minimize} && \sum_{h=0}^{23} \left( c_{\text{green},h} \cdot E_{\text{green},h} + c_{\text{traditional},h} \cdot E_{\text{traditional},h} \right) \\
+& \text{subject to} && E_{\text{high},h} = D_{\text{high},h}, && \forall h \\
+& && E_{\text{med},h} = D_{\text{med},h}, && \forall h \\
+& && E_{\text{low},h} = D_{\text{low},h}, && \forall h \\
+& && E_{\text{green},h} \leq S_{\text{green},h}, && \forall h \\
+& && \sum_{p \in \{\text{high},\text{med},\text{low}\}} E_{p,h} = E_{\text{green},h} + E_{\text{traditional},h}, && \forall h \\
+& && \text{All variables} \geq 0
+\end{aligned}
+$$
+
+\subsection{Notation}
+\begin{itemize}
+\item $D_{p,h}$: Demand for priority $p$ at hour $h$ ($p \in \{\text{high},\text{med},\text{low}\}$)
+\item $S_{\text{green},h}$: Maximum available green energy at hour $h$
+\item $c_{\text{green},h}$: Price of green energy at hour $h$
+\item $c_{\text{traditional},h}$: Price of traditional energy at hour $h$
+\end{itemize}
+
+\end{document}

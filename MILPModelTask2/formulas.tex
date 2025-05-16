@@ -1,0 +1,122 @@
+\documentclass{article}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{booktabs}
+
+\title{电力与算力协同调度优化模型}
+\author{}
+\date{}
+
+\begin{document}
+
+\maketitle
+
+\section{模型定义}
+
+\subsection{决策变量}
+\begin{align*}
+E_{g,h} &\geq 0 \quad \text{第$h$小时绿电使用量} \\
+E_{t,h} &\geq 0 \quad \text{第$h$小时传统电力使用量} \\
+x_{p,h} &\geq 0 \quad \text{第$h$小时$p$优先级任务分配量} \quad (p \in \{high, medium, low\}) \\
+\delta_{m,h} &\in \{0,1\} \quad \text{中优先级任务延迟标志} \\
+\delta_{l,h} &\in \{0,1\} \quad \text{低优先级任务延迟标志}
+\end{align*}
+
+\section{优化问题}
+
+\subsection{目标函数}
+\begin{equation}
+\min \sum_{h=0}^{23} \left(
+\underbrace{c_{g,h}E_{g,h} + c_{t,h}E_{t,h}}_{\text{电力成本}} +
+\underbrace{P_m \delta_{m,h} + P_l \delta_{l,h}}_{\text{延迟惩罚}}
+\right)
+\end{equation}
+其中：
+\begin{itemize}
+\item $c_{g,h}$: 第$h$小时绿电价格
+\item $c_{t,h}$: 第$h$小时传统电价
+\item $P_m=1000$: 中优先级延迟惩罚系数
+\item $P_l=500$: 低优先级延迟惩罚系数
+\end{itemize}
+
+\section{约束条件}
+
+\subsection{电力供应约束}
+\begin{align}
+E_{g,h} &\leq S_{g,h} \quad \forall h \label{eq:green_supply} \\
+E_{t,h} &\geq 0 \quad \forall h \label{eq:trad_supply}
+\end{align}
+其中$S_{g,h}$为第$h$小时最大绿电供应量。
+
+\subsection{算力-电力平衡}
+\begin{equation}
+\sum_{p \in \{high,medium,low\}} \alpha_p x_{p,h} = E_{g,h} + E_{t,h} \quad \forall h
+\end{equation}
+其中$\alpha_p$表示$p$优先级任务的单位算力耗电量：
+$$
+\alpha_p =
+\begin{cases}
+80 & p=high \\
+50 & p=medium \\
+30 & p=low
+\end{cases}
+$$
+
+\subsection{任务分配约束}
+\begin{align}
+x_{high,h} &= D_{high,h} \quad \forall h \label{eq:high_task} \\
+x_{medium,h} &\geq D_{medium,h} - M\delta_{m,h} \quad \forall h \label{eq:medium_task} \\
+x_{low,h} &\geq D_{low,h} - M\delta_{l,h} \quad \forall h \label{eq:low_task}
+\end{align}
+其中：
+\begin{itemize}
+\item $D_{p,h}$: 第$h$小时$p$优先级任务需求
+\item $M$: 足够大的常数（取$2\max(D_{p,h})$）
+\end{itemize}
+
+\subsection{绿电比例约束}
+\begin{equation}
+\sum_{h=0}^{23} E_{g,h} \geq \gamma \sum_{h=0}^{23} (E_{g,h} + E_{t,h}) \quad (\gamma=0.3)
+\end{equation}
+
+\section{求解算法}
+
+采用分支定界法求解混合整数线性规划问题：
+
+\begin{align}
+\text{松弛问题} &: \min \{c^T x \mid Ax \leq b, x \geq 0\} \label{eq:lp_relax} \\
+\text{分支策略} &: \text{对$\delta_{m,h},\delta_{l,h}$进行二分} \nonumber \\
+\text{定界规则} &: \text{当前最优解$\pm 5\%$为可行域} \nonumber
+\end{align}
+
+算法步骤：
+\begin{enumerate}
+\item 求解线性松弛问题(\ref{eq:lp_relax})
+\item 选择分数变量创建分支
+\item 更新全局上下界
+\item 重复直到满足：
+$$
+\frac{z_{UB} - z_{LB}}{z_{UB}} \leq \epsilon \quad (\epsilon=0.01)
+$$
+\end{enumerate}
+
+\section{模型参数}
+
+\begin{table}[h]
+\centering
+\caption{模型参数表}
+\begin{tabular}{lll}
+\toprule
+符号 & 含义 & 取值示例 \\
+\midrule
+$S_{g,h}$ & 绿电供应上限 & 见代码数据 \\
+$c_{g,h}$ & 绿电价格 & 0.3-0.6元/kWh \\
+$c_{t,h}$ & 传统电价 & 0.5-1.3元/kWh \\
+$D_{high,h}$ & 高优先级需求 & 0-90任务量 \\
+$D_{medium,h}$ & 中优先级需求 & 0-100任务量 \\
+$D_{low,h}$ & 低优先级需求 & 0-60任务量 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\end{document}

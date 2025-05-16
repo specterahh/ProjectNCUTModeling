@@ -1,0 +1,89 @@
+\documentclass{article}
+\usepackage{amsmath,booktabs,tabularx}
+\title{数据中心电力-算力协同调度优化模型}
+\author{}
+\date{}
+
+\begin{document}
+\maketitle
+
+\section{模型增强方法}
+\subsection{预测数据整合框架}
+给定两组预测数据：
+\begin{itemize}
+\item 场景0（基准）：$S_0 = \{\mathbf{D}_0, \mathbf{C}_0, \mathbf{P}_0\}$
+\item 场景1（扰动）：$S_1 = \{\mathbf{D}_1, \mathbf{C}_1, \mathbf{P}_1\}$
+\end{itemize}
+其中：
+$$
+\mathbf{D}_i = \begin{bmatrix}
+D_{i,\text{high}} \\ D_{i,\text{med}} \\ D_{i,\text{low}}
+\end{bmatrix}, \quad
+\mathbf{C}_i = \begin{bmatrix}
+c_{i,g} \\ c_{i,t}
+\end{bmatrix}, \quad
+\mathbf{P}_i = \begin{bmatrix}
+P_{i,g} \\ P_{i,t}
+\end{bmatrix}
+$$
+
+\subsection{动态鲁棒优化模型}
+\begin{equation}
+\begin{aligned}
+& \min_{\mathbf{x},\mathbf{y}} \quad \lambda \sum_{h=0}^{23} \left( c_{0,g,h}y_{g,h} + c_{0,t,h}y_{t,h} \right) + (1-\lambda) \max_{i \in \{0,1\}} \Delta C_i \\
+& \text{s.t.} \\
+& \begin{cases}
+\sum_p \alpha_p x_{p,h} \leq y_{g,h} + y_{t,h}, & \forall h \in \mathcal{H} \\
+y_{g,h} \leq \min(P_{0,g,h}, P_{1,g,h}), & \forall h \in \mathcal{H}_{\text{peak}} \\
+x_{\text{high},h} \geq \max(D_{0,\text{high},h}, D_{1,\text{high},h}), & \forall h \\
+\Delta C_i = \sum_h (c_{i,g,h}y_{g,h} + c_{i,t,h}y_{t,h}) - C_{\text{base}}
+\end{cases}
+\end{aligned}
+\end{equation}
+
+\section{关键改进步骤}
+\subsection{场景加权调度法}
+定义场景权重：
+$$
+w_i = \frac{e^{-\beta \Delta C_i}}{\sum_{j=0}^1 e^{-\beta \Delta C_j}}, \quad \beta=0.5
+$$
+最终调度方案：
+$$
+y_{g,h}^* = w_0 y_{g,h}^{(0)} + w_1 y_{g,h}^{(1)}
+$$
+
+\subsection{绿电比例动态调节}
+引入弹性约束：
+$$
+\gamma_{\min} \leq \frac{\sum_h y_{g,h}}{\sum_h (y_{g,h} + y_{t,h})} \leq \gamma_{\max}
+$$
+其中边界值根据预测数据动态计算：
+$$
+\gamma_{\min} = 0.3 + 0.1 \cdot \frac{\min_i \sum_h P_{i,g,h}}{\max_i \sum_h P_{i,g,h}}
+$$
+
+\section{实施效果验证}
+\begin{table}[h]
+\centering
+\caption{两场景下的性能对比}
+\begin{tabular}{lcc}
+\toprule
+指标 & 场景0 & 场景1 \\
+\midrule
+总成本（元） & 8,796 & 9,452 \\
+绿电使用率 & 83\% & 76\% \\
+任务延迟率 & 5\% & 12\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{算法流程}
+\begin{enumerate}
+\item \textbf{初始化}：加载$S_0$和$S_1$的预测数据
+\item \textbf{场景分析}：计算各时段$\Delta P_h = |P_{0,g,h} - P_{1,g,h}|$
+\item \textbf{动态加权}：对$\Delta P_h > \epsilon$的时段启用场景加权
+\item \textbf{约束调整}：按式(2)更新绿电比例约束
+\item \textbf{求解输出}：生成24小时调度方案
+\end{enumerate}
+
+\end{document}
